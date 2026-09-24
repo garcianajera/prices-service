@@ -1,0 +1,103 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+# A newer push to the same branch or pull request makes an older run pointless.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      # Caches dependencies and the Gradle distribution, and validates the wrapper jar.
+      - uses: gradle/actions/setup-gradle@v5
+
+      - name: Build
+        run: ./gradlew build
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: build/reports/tests/
+          retention-days: 7
+
+  api-contract:
+    name: Lint API contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Lint openapi.yaml
+        run: npx --yes @redocly/cli@2 lint docs/api/openapi.yaml
+
+  brand-check:
+    name: Brand check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # commit messages are checked too
+
+      # The words live only in the BRAND_DENYLIST secret, one per line, stored both as an Actions and as a
+      # Dependabot secret. Only file names and commit hashes are printed, never the matching text. The PR title
+      # and body are checked too, because a squash merge turns them into the commit message.
+      - name: Check files, commit messages and pull request text
+        env:
+          BRAND_DENYLIST: ${{ secrets.BRAND_DENYLIST }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          denylist="$(mktemp)"
+          # A blank pattern would match every line, so drop blank lines.
+          printf '%s\n' "$BRAND_DENYLIST" | grep -v '^[[:space:]]*$' > "$denylist" || true
+          if [ ! -s "$denylist" ]; then
+            # Fails closed: forks and Dependabot runs only get secrets stored for them.
+            echo "::error::BRAND_DENYLIST is not available (not set, empty, or not shared with this fork or Dependabot run)."
+            exit 1
+          fi
+
+          status=0
+          files="$(grep -rliIwf "$denylist" --exclude-dir=.git --exclude=denylist.local.txt . || true)"
+          if [ -n "$files" ]; then
+            echo "::error::Forbidden brand name found in files:"
+            echo "$files"
+            status=1
+          fi
+          for commit in $(git rev-list HEAD); do
+            if git log -1 --format=%B "$commit" | grep -qiwf "$denylist"; then
+              echo "::error::Forbidden brand name found in the message of commit $commit"
+              status=1
+            fi
+          done
+          if printf '%s\n%s\n' "$PR_TITLE" "$PR_BODY" | grep -qiwf "$denylist"; then
+            echo "::error::Forbidden brand name found in the pull request title or description"
+            status=1
+          fi
+          rm -f "$denylist"
+          exit "$status"

@@ -49,6 +49,9 @@ Don't quietly pick one.
 npx @redocly/cli lint docs/api/openapi.yaml           # lint the API contract after editing it
 ```
 
+- CI (`.github/workflows/ci.yml`) runs the build, the contract lint and the brand check on every push to
+  `master` and every pull request to `master`. Dependabot keeps the action versions current.
+
 - Swagger UI: `http://localhost:8080/swagger-ui.html`
 - Example: `curl 'http://localhost:8080/api/v1/prices?applicationDate=2020-06-14T10:00:00&productId=35455&brandId=1'`
 - H2 console (with `bootRun` only): `http://localhost:8080/h2-console`. The JDBC URL is generated for each run and
@@ -155,11 +158,14 @@ so the response DTO needs `@JsonFormat`.
 - The forbidden words are in `.claude/denylist.local.txt`, which is git-ignored and local only. Check with
   `grep -rniIwf .claude/denylist.local.txt --exclude-dir={.git,build,.gradle,.idea} --exclude=denylist.local.txt .`
   (no output means clean). Never copy the words from that file into anything that gets committed.
+- CI runs the same check, on commit messages and pull request text too, with the words from the
+  `BRAND_DENYLIST` secret (one per line). It is stored twice, as an Actions secret and as a Dependabot secret,
+  because Dependabot runs only get Dependabot secrets. When you change the local file, update both.
 - Don't commit the original PDF statement. Its transcription with the name replaced is in
   `requirements.md` Appendix A.
 
 ## Git
 
 - Main branch: `master`. Make small, focused commits using [Conventional Commits](https://www.conventionalcommits.org)
-  (`feat:`, `fix:`, `test:`, `docs:`, `refactor:`, `chore:`).
+  (`feat:`, `fix:`, `test:`, `docs:`, `refactor:`, `ci:`, `chore:`).
 - `./gradlew build` must pass before committing.
