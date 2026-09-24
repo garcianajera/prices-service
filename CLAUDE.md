@@ -108,6 +108,23 @@ Base package: `com.store.prices`.
 - New rules come with their tests in the same change. For bug fixes, first write a failing test that
   reproduces the bug.
 
+### Workflow (outside-in, two loops)
+
+1. **Outer loop: acceptance tests first.**
+   - Write all AT and B cases as integration tests before any production code.
+   - Run them once to confirm they fail for the right reason (e.g. 404, no handler), not because of a
+     compile error or a broken test.
+   - Commit them disabled at class level: `@Disabled("Pending: enabled when the price endpoint is implemented")`.
+2. **Inner loop: one slice at a time.** The order is domain → use case → persistence → REST. Write each
+   slice's unit or slice tests first, and commit them together with the code that makes them pass.
+3. **Finish:** the last slice removes `@Disabled`. The feature is done when every acceptance test passes
+   without changing any expected value.
+
+- Every commit must keep `./gradlew build` green. Never commit failing tests. Pending acceptance tests
+  are disabled, not failing.
+- Don't use `@Disabled` for anything other than the pending acceptance tests, and always give a reason.
+- The ArchUnit test is enabled from the start, with `allowEmptyShould(true)` while the packages are empty.
+
 ## Confidentiality
 
 - **Never** write the real brand name from the original test statement anywhere: code, tests, docs,
