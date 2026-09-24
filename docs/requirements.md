@@ -80,7 +80,7 @@ The source writes dates as `yyyy-MM-dd-HH.mm.ss` (e.g. `2020-06-14-00.00.00`). S
   price to apply. It also returns the currency (D8).
 - **FR-4 — Price selection.** From the prices of the given brand and product whose date range
   contains the application date (D3), the one with the highest priority applies. Ties are broken by
-  D4. If none applies, see D5.
+  D4, then D14. If none applies, see D5.
 - **FR-5 — Persistence.** Use an in-memory database (H2 type), initialised with the seed data in section 3.2.
 - **FR-6 — Endpoint tests.** Provide tests against the REST endpoint that validate the acceptance
   criteria in section 5.1 with the seed data.
@@ -196,6 +196,7 @@ Points the original statement leaves open, and the decision taken:
 | D11 | Numeric representation of money                                   | Exact decimal with 2 fraction digits, never floating point.                                                           |
 | D12 | The statement gives only the day ("día 14") for the test requests | June 2020, the only month consistent with the seed data.                                                              |
 | D13 | Precision of `applicationDate`                                    | Whole seconds (`yyyy-MM-ddTHH:mm:ss`). Fractional seconds are rejected with 400, because the data has second precision. |
+| D14 | Several applicable prices with the same highest priority **and** the same `START_DATE` (D4 can't decide) | The one with the highest `PRICE_LIST` wins, so the result is always deterministic. (Pending confirmation: Q1.) |
 
 ### 7.4 Architecture constraints (AR-1, AR-3)
 - **C1 — Three layers:** `domain`, `application`, `infrastructure`.
@@ -203,7 +204,7 @@ Points the original statement leaves open, and the decision taken:
 - **C3 — Framework-free core:** `domain` and `application` contain no framework, persistence or HTTP code.
 - **C4 — Ports:** the use case is exposed through an inbound port. Persistence is reached through an
   outbound port, implemented by an adapter in `infrastructure`.
-- **C5 — Business rule in the domain:** the price selection rule (FR-4, D3, D4) is implemented in the
+- **C5 — Business rule in the domain:** the price selection rule (FR-4, D3, D4, D14) is implemented in the
   domain with the Java Stream API. The database may pre-filter candidates for efficiency, but it must
   not decide which price wins.
 - **C6 — No leaking models:** persistence and API models never cross into the domain.
@@ -213,7 +214,7 @@ Points the original statement leaves open, and the decision taken:
   and the real seed data, with no layer mocked, and assert every response field. Mocked slice tests
   are extra and don't count in their place.
 - **T2 — Domain unit tests** for the stream-based selection algorithm. They cover: no candidates, a
-  single match, the highest priority winning, the tie-break (D4), non-applicable candidates ignored,
+  single match, the highest priority winning, the tie-breaks (D4, D14), non-applicable candidates ignored,
   and inclusive boundaries (D3).
 - **T3 — Use case unit tests,** with the outbound port mocked and no framework context: the price is
   found, or nothing applies (D5).
@@ -229,7 +230,7 @@ Points the original statement leaves open, and the decision taken:
 
 | ID | Question                                                                                  | Current assumption |
 |----|-------------------------------------------------------------------------------------------|--------------------|
-| Q1 | Is a same-priority overlap valid data, or should it be treated as a data-integrity error? | Valid; D4 applies. |
+| Q1 | Is a same-priority overlap valid data, or should it be treated as a data-integrity error? | Valid; D4 applies, then D14. |
 
 ## 9. Out of scope
 

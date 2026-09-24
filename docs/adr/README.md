@@ -1,7 +1,7 @@
 # Architecture Decision Records
 
 Architecture decisions for the prices service. The format and rules are in ADR-0001. Behaviour
-decisions (D1–D13) are in [`../requirements.md`](../requirements.md), not here.
+decisions (the D entries) are in [`../requirements.md`](../requirements.md), not here.
 
 | ADR | Title | Status |
 |-----|-------|--------|

@@ -20,7 +20,8 @@ info:
 
     **Selection rule:** from the prices of the brand and product whose date range contains the
     application date (both ends inclusive), the one with the highest priority applies. If several
-    share the highest priority, the one with the latest start date applies.
+    share the highest priority, the one with the latest start date applies, and if they also share the
+    start date, the one with the highest price list identifier applies.
 
     **Dates** are local date-times with no time zone and whole-second precision
     (`yyyy-MM-ddTHH:mm:ss`). Fractional seconds are rejected.

@@ -63,7 +63,7 @@ Run these and report each result. A check that can't run is reported as "not run
 
 **Correctness against the requirements**
 - The selection rule: highest priority wins (FR-4), both range ends inclusive (D3), ties go to the
-  latest `START_DATE` (D4).
+  latest `START_DATE` (D4), then to the highest `PRICE_LIST` (D14).
 - Errors: 404 when no price applies, also for unknown brand or product (D5, D9). 400 for missing,
   malformed or non-positive input (D6). Fractional seconds rejected with 400 (D13).
 - The response has exactly the contract's fields: `productId`, `brandId`, `priceList`, `startDate`,
@@ -96,7 +96,7 @@ Run these and report each result. A check that can't run is reported as "not run
   with a reason.
 - Test names start with the case ID where one applies (AT-*, B*).
 - Domain and use case tests are plain unit tests, with no Spring context (T2, T3). T2 covers: no
-  candidates, a single match, the highest priority winning, the D4 tie-break, non-applicable candidates
+  candidates, a single match, the highest priority winning, the D4 and D14 tie-breaks, non-applicable candidates
   ignored, and inclusive boundaries.
 - New behaviour ships with its tests in the same change. A bug fix comes with a test that reproduces it.
 - `ArchitectureTest` rules must never be weakened, removed or given exceptions to make a build pass.
