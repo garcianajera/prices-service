@@ -186,8 +186,8 @@ Integration test approach: see [ADR-0006](adr/0006-integration-tests-with-mockmv
 | —   | Persistence slice      | `PricePersistenceAdapter` + JPA query      | `@DataJpaTest`                          | Pre-filter against the seed data, boundary dates included; entity→domain mapping.                          |
 | —   | Seed data              | `schema.sql` + `data.sql`                  | `@DataJpaTest`, `JdbcTemplate`          | `PRICES` holds exactly the rows of `docs/source/prices.csv`, field by field (`SeedDataTest`).               |
 | —   | REST slice             | `PriceController` + `RestExceptionHandler` | `@WebMvcTest`, mocked use case          | Parameter binding, JSON shape, 400 for missing or malformed params and fractional seconds, 404 mapping.   |
-| T1  | Integration            | Full application                           | `@SpringBootTest` + MockMvc, H2         | AT-1–AT-5 and B1–B13, parameterized, every response field asserted.                                        |
-| T4  | Architecture           | Package dependencies                       | ArchUnit                                | Layer rule C2; no Spring, JPA or Jakarta imports in `domain` or `application` (C3).                        |
+| T1  | Integration            | Full application (`PriceAcceptanceTest`)   | `@SpringBootTest` + MockMvc, H2         | AT-1–AT-5 and B1–B7: the whole 200 body is compared strictly (`JsonCompareMode.STRICT`), so all fields are checked and extra fields fail. B8–B13: status plus the problem+json content type, `status` and `title`. Parameterized with `@CsvSource` tables that mirror the requirements. |
+| T4  | Architecture           | Package dependencies (`ArchitectureTest`)  | ArchUnit                                | Layer rule C2; no Spring, JPA, Jakarta, Hibernate or Jackson dependencies in `domain` or `application` (C3); no field injection. |
 
 - Test naming: `should<Expected>_when<Condition>`, or `@DisplayName` with a readable sentence.
 - Test dependencies: JUnit 5, AssertJ and Mockito come with the Spring Boot test starters. ArchUnit

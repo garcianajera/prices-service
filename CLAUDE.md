@@ -3,8 +3,8 @@
 Spring Boot REST service that returns the applicable price for a brand, product and application
 date. It is a technical test, assessed on design, code quality and correct test results.
 
-**Status:** the build setup is done: H2 schema, seed data and build configuration. The business code
-hasn't been written yet. Next is the pending acceptance tests (see Workflow).
+**Status:** the build setup and the pending acceptance tests (`PriceAcceptanceTest`, disabled) are done, and
+`ArchitectureTest` is active. The business code hasn't been written yet. Next is the domain slice (see Workflow).
 
 ## Source of truth
 
@@ -116,6 +116,8 @@ Base package: `com.store.prices`.
    - Run them once to confirm they fail for the right reason (e.g. 404, no handler), not because of a
      compile error or a broken test.
    - Commit them disabled at class level: `@Disabled("Pending: enabled when the price endpoint is implemented")`.
+   - `./gradlew test -PrunPending` also runs the disabled tests. Use it to see how many acceptance tests pass
+     so far. A plain `./gradlew build` still skips them.
 2. **Inner loop: one slice at a time.** The order is domain → use case → persistence → REST. Write each
    slice's unit or slice tests first, and commit them together with the code that makes them pass.
 3. **Finish:** the last slice removes `@Disabled`. The feature is done when every acceptance test passes

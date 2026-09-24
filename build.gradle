@@ -45,4 +45,8 @@ tasks.named('test') {
     testLogging {
         events 'skipped', 'failed'
     }
+    // ./gradlew test -PrunPending also runs the @Disabled (pending) acceptance tests.
+    if (project.hasProperty('runPending')) {
+        systemProperty 'junit.jupiter.conditions.deactivate', 'org.junit.*DisabledCondition'
+    }
 }
