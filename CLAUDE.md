@@ -4,7 +4,7 @@ Spring Boot REST service that returns the applicable price for a brand, product 
 date. It is a technical test, assessed on design, code quality and correct test results.
 
 **Status:** the build setup, the pending acceptance tests (`PriceAcceptanceTest`, disabled), `ArchitectureTest`,
-the domain slice and the use case slice are done. Next is the persistence slice (see Workflow).
+the domain, use case and persistence slices are done. Next is the REST slice (see Workflow).
 
 ## Source of truth
 

@@ -139,10 +139,16 @@ and DTO are written by hand to match it.
 ### 6.2 Persistence adapter (outbound)
 
 Schema initialisation: see [ADR-0004](adr/0004-schema-and-data-with-sql-scripts.md).
-- `PriceEntity`: a JPA entity mapped to `PRICES`. It includes the audit columns, which never reach the domain.
-- `PriceJpaRepository`: a derived query or a JPQL query filtering by brand, product and
+- `PriceEntity`: a JPA entity mapped to `PRICES`, with a `protected` no-arg constructor for JPA. It maps the
+  audit columns and `ID` but exposes no getters for them, so they never reach the domain. The service is
+  read-only, so there are no setters.
+- `PriceJpaRepository`: a JPQL `@Query` filtering by brand, product and
   `startDate <= :date AND endDate >= :date`. It has **no** `ORDER BY priority` and **no** `LIMIT` (C5).
-- `PricePersistenceAdapter` implements `PriceRepositoryPort` and maps entities to the domain with `PriceEntityMapper`.
+  JPQL rather than a derived query: the derived name would be very long and need the date twice, and the
+  whole pre-filter is easier to review in one place.
+- `PricePersistenceAdapter` (`@Component`) implements `PriceRepositoryPort` and maps entities to the domain
+  with `PriceEntityMapper`, an injected `@Component`. It is the only class with a transaction
+  (`@Transactional(readOnly = true)`).
 - Schema and data are loaded from `src/main/resources/schema.sql` and `data.sql`, with
   `spring.jpa.hibernate.ddl-auto=none`.
 - No fixed `spring.datasource.url`. Spring Boot creates a uniquely named in-memory H2 database for
