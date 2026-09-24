@@ -75,7 +75,8 @@ Base package: `com.store.prices`.
 ## Code conventions
 
 - Use `record`s for immutable data (domain model, queries, DTOs), and validate invariants in compact constructors.
-- Use constructor injection only, never field injection.
+- Production code uses constructor injection only, never field injection (ArchUnit enforces this). Tests
+  may use `@Autowired` fields, the usual Spring test convention.
 - Money is `BigDecimal`, never `double`/`float`. Dates are `LocalDateTime` without a time zone, at second precision.
 - Return `Optional` rather than `null`. A missing price becomes a domain exception, which the REST
   layer turns into a 404.
@@ -128,10 +129,19 @@ Base package: `com.store.prices`.
 - Don't use `@Disabled` for anything other than the pending acceptance tests, and always give a reason.
 - The ArchUnit test is enabled from the start, with `allowEmptyShould(true)` while the packages are empty.
 
+## Code review
+
+- Before committing a slice, run the `code-reviewer` agent (`.claude/agents/code-reviewer.md`). It is
+  read-only: it runs the build, the pending acceptance tests and the brand check, and reviews against
+  these docs. Fix every Blocker and Major finding, or discuss it, before committing.
+
 ## Confidentiality
 
 - **Never** write the real brand name from the original test statement anywhere: code, tests, docs,
   commit messages or comments. Brand `1` is always "STORE Z".
+- The forbidden words are in `.claude/denylist.local.txt`, which is git-ignored and local only. Check with
+  `grep -rniIwf .claude/denylist.local.txt --exclude-dir={.git,build,.gradle,.idea} --exclude=denylist.local.txt .`
+  (no output means clean). Never copy the words from that file into anything that gets committed.
 - Don't commit the original PDF statement. Its transcription with the name replaced is in
   `requirements.md` Appendix A.
 

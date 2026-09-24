@@ -35,3 +35,7 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Claude Code (local only, never committed) ###
+.claude/settings.local.json
+.claude/denylist.local.txt
