@@ -193,15 +193,19 @@ Schema initialisation: see [ADR-0004](adr/0004-schema-and-data-with-sql-scripts.
 - The audit columns and `ID` exist only in the entity. The domain `Price` doesn't carry them.
 
 ### 6.3 Configuration
-- `BeanConfiguration` defines `@Bean`s for `PriceSelector` and `FindApplicablePriceService`.
+- `BeanConfiguration` defines `@Bean`s for `PriceSelector` and `FindApplicablePriceUseCase` (a `FindApplicablePriceService`).
 - The H2 console is enabled only in development (`developmentOnly` dependency).
 - OpenAPI (ADR-0007):
   - `build.gradle` copies `docs/api/openapi.yaml` into the jar as `static/openapi.yaml`
     (`processResources { from('docs/api') { include 'openapi.yaml'; into 'static' } }`).
-  - springdoc shows that file in Swagger UI (`springdoc.swagger-ui.url=/openapi.yaml`). The spec it
-    generates from the code must not be presented as the contract. Choose the exact springdoc
-    properties that achieve this (disabling or hiding `/v3/api-docs`) during implementation, and
-    check them against the running app.
+  - springdoc shows that file in Swagger UI (`springdoc.swagger-ui.url=/openapi.yaml`).
+  - The spec springdoc generates from the code must not be presented as the contract. It can't be switched
+    off: `springdoc.api-docs.enabled=false` also removes Swagger UI, which depends on it. So
+    `springdoc.paths-to-match=/none` restricts it to no paths, and `/v3/api-docs` returns a spec with empty
+    `paths`. Left alone, it would contradict the contract: it declares `applicationDate` as `date-time`, which
+    allows offsets and fractional seconds (D13).
+  - `OpenApiServingTest` guards all three: the file is served byte for byte, Swagger UI's config points to
+    it, and the generated spec has no paths.
 
 ## 7. Coding guidelines
 - Use `record`s for immutable data: domain model, query, DTO.
@@ -222,6 +226,7 @@ Integration test approach: see [ADR-0006](adr/0006-integration-tests-with-mockmv
 | —   | Persistence slice      | `PricePersistenceAdapter` + JPA query      | `@DataJpaTest`                          | Pre-filter against the seed data, boundary dates included; entity→domain mapping.                          |
 | —   | Seed data              | `schema.sql` + `data.sql`                  | `@DataJpaTest`, `JdbcTemplate`          | `PRICES` holds exactly the rows of `docs/source/prices.csv`, field by field (`SeedDataTest`).               |
 | —   | REST slice             | `PriceController` + `RestExceptionHandler` | `@WebMvcTest`, mocked use case          | Parameter binding, JSON shape (strict, incl. seconds and scale), full problem bodies for 400 (every B12/B13 variant), 404 and 500 (no internal details), and Spring's own 404 (unknown path) and 405 as problem+json. |
+| —   | OpenAPI serving        | `static/openapi.yaml` + springdoc config   | `@SpringBootTest` + MockMvc             | The contract is served byte for byte, Swagger UI's config points to it, and the generated spec has no paths (`OpenApiServingTest`). |
 | T1  | Integration            | Full application (`PriceAcceptanceTest`)   | `@SpringBootTest` + MockMvc, H2         | AT-1–AT-5 and B1–B7: the whole 200 body is compared strictly (`JsonCompareMode.STRICT`), so all fields are checked and extra fields fail. B8–B13: status plus the problem+json content type, `status` and `title`. Parameterized with `@CsvSource` tables that mirror the requirements. |
 | T4  | Architecture           | Package dependencies (`ArchitectureTest`)  | ArchUnit                                | Layer rule C2; no Spring, JPA, Jakarta, Hibernate or Jackson dependencies in `domain` or `application` (C3); no field injection. |
 
