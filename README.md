@@ -1,5 +1,7 @@
 # Prices Service
 
+[![CI](https://github.com/garcianajera/prices-service/actions/workflows/ci.yml/badge.svg)](https://github.com/garcianajera/prices-service/actions/workflows/ci.yml)
+
 A Spring Boot REST service that answers one question: **which price applies to this product of this brand at
 this moment?** Given an application date, a product and a brand, it returns the single applicable price list
 and its final price. Brand `1` is referred to as STORE Z.
@@ -96,6 +98,10 @@ generated from the code ([ADR-0007](docs/adr/0007-contract-first-openapi.md)).
 ./gradlew test                                         # tests only
 ./gradlew test --tests 'com.store.prices.acceptance.PriceAcceptanceTest'   # a single class
 ```
+
+[CI](.github/workflows/ci.yml) runs on every push to `master` and every pull request to `master`. It runs
+`./gradlew build`, lints the OpenAPI contract, and checks that no confidential name appears in the files, the
+commit messages or the pull request text.
 
 | Level        | What it covers                                                                  | Tests |
 |--------------|---------------------------------------------------------------------------------|-------|
