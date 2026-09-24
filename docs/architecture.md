@@ -102,9 +102,14 @@ actually apply, and they come in no particular order. It never picks the winner 
 ## 5. Application
 
 - `FindApplicablePriceUseCase`: `Price find(PriceQuery query)`.
+- `PriceQuery` (record): the compact constructor rejects a null `applicationDate` and ids that aren't
+  positive, so an invalid query can't exist. The REST adapter validates the same rules first (D6), so a
+  client gets a 400 before this check is reached.
 - `FindApplicablePriceService` calls the port, then passes the result to `PriceSelector`. If nothing
   is selected, it throws `PriceNotFoundException` (D5).
 - It has no `@Service` annotation. `BeanConfiguration` creates it, which keeps the layer framework-free (C3).
+- `FindApplicablePriceServiceTest` mocks only the port. It uses the real `PriceSelector`, which is pure
+  domain logic, so the test checks the outcome and not how the service calls the selector.
 
 ## 6. Infrastructure
 
