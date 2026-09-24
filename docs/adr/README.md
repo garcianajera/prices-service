@@ -11,3 +11,4 @@ decisions (D1–D13) are in [`../requirements.md`](../requirements.md), not here
 | [0004](0004-schema-and-data-with-sql-scripts.md) | Schema and seed data with SQL scripts, not Hibernate DDL | Accepted |
 | [0005](0005-errors-as-problem-details.md) | Errors as RFC 9457 Problem Details from a single handler | Accepted |
 | [0006](0006-integration-tests-with-mockmvc.md) | Integration tests with `@SpringBootTest` and MockMvc | Accepted |
+| [0007](0007-contract-first-openapi.md) | Contract-first OpenAPI specification, hand-written | Accepted |

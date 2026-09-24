@@ -101,7 +101,9 @@ It returns the candidate prices. It does not order them or pick one.
 
 ### 6.1 REST adapter (inbound)
 
-Error handling: see [ADR-0005](adr/0005-errors-as-problem-details.md).
+Error handling: see [ADR-0005](adr/0005-errors-as-problem-details.md). The contract is
+[`api/openapi.yaml`](api/openapi.yaml): see [ADR-0007](adr/0007-contract-first-openapi.md). The controller
+and DTO are written by hand to match it.
 - `PriceController`: `@GetMapping("/api/v1/prices")`, with parameters:
   - `@RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") LocalDateTime applicationDate`.
     The strict pattern rejects fractional seconds (D13). `iso = DATE_TIME` would accept them.
@@ -116,7 +118,7 @@ Error handling: see [ADR-0005](adr/0005-errors-as-problem-details.md).
 | `MissingServletRequestParameterException`, `MethodArgumentTypeMismatchException`, `HandlerMethodValidationException` / `ConstraintViolationException` | 400 |
 | Any other `Exception` (logged; generic message)                                             | 500    |
 
-- OpenAPI annotations (`@Operation`, `@ApiResponse`) go on the controller only.
+- The controller has no OpenAPI annotations. The contract lives only in `openapi.yaml`.
 
 ### 6.2 Persistence adapter (outbound)
 
@@ -154,6 +156,13 @@ Schema initialisation: see [ADR-0004](adr/0004-schema-and-data-with-sql-scripts.
 ### 6.3 Configuration
 - `BeanConfiguration` defines `@Bean`s for `PriceSelector` and `FindApplicablePriceService`.
 - The H2 console is enabled only in development (`developmentOnly` dependency).
+- OpenAPI (ADR-0007):
+  - `build.gradle` copies `docs/api/openapi.yaml` into the jar as `static/openapi.yaml`
+    (`processResources { from('docs/api') { include 'openapi.yaml'; into 'static' } }`).
+  - springdoc shows that file in Swagger UI (`springdoc.swagger-ui.url=/openapi.yaml`). The spec it
+    generates from the code must not be presented as the contract. Choose the exact springdoc
+    properties that achieve this (disabling or hiding `/v3/api-docs`) during implementation, and
+    check them against the running app.
 
 ## 7. Coding guidelines
 - Use `record`s for immutable data: domain model, query, DTO.

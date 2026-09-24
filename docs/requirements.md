@@ -5,7 +5,7 @@
 | **Status** | Draft |
 | **Last updated** | 2026-09-24 |
 | **Sources** | Original technical-test statement (transcribed in Appendix A) · Seed data [`source/prices.csv`](source/prices.csv) · Additional reviewer instruction (section 4.2) |
-| **Related documents** | [`architecture.md`](architecture.md): how the service is built |
+| **Related documents** | [`architecture.md`](architecture.md): how the service is built · [`api/openapi.yaml`](api/openapi.yaml): HTTP contract · [`adr/`](adr/README.md): decision records |
 
 This document defines **what** the service must do and the constraints it must respect. Design and
 implementation choices belong in the related documents. If they disagree with this one, this one wins.
@@ -148,6 +148,9 @@ expected results. The results below come from applying FR-4 to the seed data.
 
 ### 7.2 API contract
 
+The formal contract is [`api/openapi.yaml`](api/openapi.yaml) (OpenAPI 3.1). It defines exact types,
+formats, required fields and error bodies. The summary below must stay consistent with it.
+
 ```
 GET /api/v1/prices?applicationDate={yyyy-MM-ddTHH:mm:ss}&productId={id}&brandId={id}
 ```
@@ -218,7 +221,8 @@ Points the original statement leaves open, and the decision taken:
 
 ### 7.6 Non-functional
 - **N1:** the build compiles and passes all tests with no external services.
-- **N2:** the API is documented with OpenAPI, and an interactive UI is available.
+- **N2:** the API contract is an OpenAPI document ([`api/openapi.yaml`](api/openapi.yaml)), served in an
+  interactive UI by the running service.
 - **N3:** a README explains how to run the service and the tests, with example requests.
 
 ## 8. Open questions

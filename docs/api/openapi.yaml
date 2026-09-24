@@ -1,0 +1,265 @@
+# Prices Service — HTTP contract (source of truth for the API).
+#
+# Maintainers: this file is consumer-facing and shown in Swagger UI, so descriptions state behaviour
+# in plain words and never reference internal documents. Traceability runs the other way:
+#   - behaviour rules and IDs: docs/requirements.md (FR-*, D*, AT-*, B*)
+#   - why the contract is hand-written and contract-first: docs/adr/0007-contract-first-openapi.md
+# The example keys below map to acceptance cases: price-list-1 = AT-1, price-list-2 = AT-2,
+# price-list-3 = AT-4, price-list-4 = AT-5, fractional-seconds = B12.
+# Lint after editing: npx @redocly/cli lint docs/api/openapi.yaml
+
+openapi: 3.1.0
+
+info:
+  title: Prices Service API
+  version: 1.0.0
+  summary: Returns the applicable price for a brand, product and application date.
+  description: |
+    Read-only API that answers one question: which price applies to this product of this brand at
+    this moment?
+
+    **Selection rule:** from the prices of the brand and product whose date range contains the
+    application date (both ends inclusive), the one with the highest priority applies. If several
+    share the highest priority, the one with the latest start date applies.
+
+    **Dates** are local date-times with no time zone and whole-second precision
+    (`yyyy-MM-ddTHH:mm:ss`). Fractional seconds are rejected.
+
+servers:
+  - url: http://localhost:8080
+    description: Local
+
+# No authentication: out of scope for this service.
+security: []
+
+tags:
+  - name: Prices
+    description: Price queries
+
+paths:
+  /api/v1/prices:
+    get:
+      tags: [Prices]
+      operationId: getApplicablePrice
+      summary: Get the applicable price
+      description: |
+        Returns the single price that applies to the product of the brand at the application date.
+        Returns 404 if no price applies. Brands and products are not validated separately: an
+        unknown brand or product simply has no price, so it also returns 404.
+      parameters:
+        - $ref: '#/components/parameters/ApplicationDate'
+        - $ref: '#/components/parameters/ProductId'
+        - $ref: '#/components/parameters/BrandId'
+      responses:
+        '200':
+          description: The applicable price.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceResponse'
+              examples:
+                price-list-1:
+                  summary: At 2020-06-14T10:00:00, only price list 1 applies
+                  value:
+                    productId: 35455
+                    brandId: 1
+                    priceList: 1
+                    startDate: '2020-06-14T00:00:00'
+                    endDate: '2020-12-31T23:59:59'
+                    price: 35.50
+                    currency: EUR
+                price-list-2:
+                  summary: At 2020-06-14T16:00:00, price list 2 wins (priority 1 over 0)
+                  value:
+                    productId: 35455
+                    brandId: 1
+                    priceList: 2
+                    startDate: '2020-06-14T15:00:00'
+                    endDate: '2020-06-14T18:30:00'
+                    price: 25.45
+                    currency: EUR
+                price-list-3:
+                  summary: At 2020-06-15T10:00:00, price list 3 wins (priority 1 over 0)
+                  value:
+                    productId: 35455
+                    brandId: 1
+                    priceList: 3
+                    startDate: '2020-06-15T00:00:00'
+                    endDate: '2020-06-15T11:00:00'
+                    price: 30.50
+                    currency: EUR
+                price-list-4:
+                  summary: At 2020-06-16T21:00:00, price list 4 wins (priority 1 over 0)
+                  value:
+                    productId: 35455
+                    brandId: 1
+                    priceList: 4
+                    startDate: '2020-06-15T16:00:00'
+                    endDate: '2020-12-31T23:59:59'
+                    price: 38.95
+                    currency: EUR
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  parameters:
+    ApplicationDate:
+      name: applicationDate
+      in: query
+      required: true
+      description: |
+        Date and time for which the price is requested, in ISO-8601 local date-time format
+        `yyyy-MM-ddTHH:mm:ss`, with no time zone and no fractional seconds.
+      schema:
+        $ref: '#/components/schemas/LocalDateTime'
+      example: '2020-06-14T10:00:00'
+    ProductId:
+      name: productId
+      in: query
+      required: true
+      description: Product identifier.
+      schema:
+        $ref: '#/components/schemas/Identifier'
+      example: 35455
+    BrandId:
+      name: brandId
+      in: query
+      required: true
+      description: Brand identifier.
+      schema:
+        $ref: '#/components/schemas/Identifier'
+      example: 1
+
+  schemas:
+    Identifier:
+      type: integer
+      format: int64
+      minimum: 1
+
+    LocalDateTime:
+      type: string
+      description: |
+        ISO-8601 local date-time without offset or fractional seconds (`yyyy-MM-ddTHH:mm:ss`).
+        `format: date-time` is deliberately not used, because it requires an offset (RFC 3339).
+      pattern: '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$'
+      examples: ['2020-06-14T10:00:00']
+
+    PriceResponse:
+      type: object
+      description: The applicable price.
+      additionalProperties: false
+      required: [productId, brandId, priceList, startDate, endDate, price, currency]
+      properties:
+        productId:
+          $ref: '#/components/schemas/Identifier'
+        brandId:
+          $ref: '#/components/schemas/Identifier'
+        priceList:
+          description: Identifier of the price list that applies.
+          allOf:
+            - $ref: '#/components/schemas/Identifier'
+        startDate:
+          description: Start of the date range of the price that applies (inclusive).
+          allOf:
+            - $ref: '#/components/schemas/LocalDateTime'
+        endDate:
+          description: End of the date range of the price that applies (inclusive).
+          allOf:
+            - $ref: '#/components/schemas/LocalDateTime'
+        price:
+          type: number
+          description: Final sale price, an exact decimal with 2 fraction digits.
+          minimum: 0
+          multipleOf: 0.01
+          examples: [35.50]
+        currency:
+          type: string
+          description: ISO 4217 alphabetic currency code of the price.
+          pattern: '^[A-Z]{3}$'
+          examples: [EUR]
+
+    ProblemDetail:
+      type: object
+      description: RFC 9457 problem details. Extra members may be added.
+      required: [type, title, status]
+      properties:
+        type:
+          type: string
+          format: uri-reference
+          default: about:blank
+        title:
+          type: string
+          description: Short summary of the problem type.
+        status:
+          type: integer
+          description: HTTP status code.
+        detail:
+          type: string
+          description: Explanation specific to this occurrence. Never contains internal details.
+        instance:
+          type: string
+          format: uri-reference
+          description: The request path.
+
+  responses:
+    BadRequest:
+      description: |
+        Invalid request: a required parameter is missing, a parameter has the wrong type,
+        the date is malformed or has fractional seconds, or an id is not positive.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+          examples:
+            missing-parameter:
+              summary: Missing parameter
+              value:
+                type: about:blank
+                title: Bad Request
+                status: 400
+                detail: Required parameter 'brandId' is not present.
+                instance: /api/v1/prices
+            fractional-seconds:
+              summary: Fractional seconds
+              value:
+                type: about:blank
+                title: Bad Request
+                status: 400
+                detail: "Parameter 'applicationDate' must match yyyy-MM-ddTHH:mm:ss."
+                instance: /api/v1/prices
+            non-positive-id:
+              summary: Non-positive id
+              value:
+                type: about:blank
+                title: Bad Request
+                status: 400
+                detail: "Parameter 'productId' must be greater than or equal to 1."
+                instance: /api/v1/prices
+    NotFound:
+      description: No price applies for the brand, product and application date.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+          example:
+            type: about:blank
+            title: Not Found
+            status: 404
+            detail: No applicable price for brand 1, product 99999 at 2020-06-14T10:00:00.
+            instance: /api/v1/prices
+    InternalServerError:
+      description: Unexpected error. Internal details are logged, not returned.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+          example:
+            type: about:blank
+            title: Internal Server Error
+            status: 500
+            detail: An unexpected error occurred.
+            instance: /api/v1/prices

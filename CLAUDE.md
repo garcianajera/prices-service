@@ -16,12 +16,17 @@ Read these before implementing or changing behaviour:
 2. [`docs/architecture.md`](docs/architecture.md): **how** it's built. It covers packages, class names,
    the selection algorithm, the physical data model and the test strategy.
 3. [`docs/adr/`](docs/adr/README.md): **why** it's built this way. These are the Architecture Decision Records.
+4. [`docs/api/openapi.yaml`](docs/api/openapi.yaml): the **HTTP contract** (OpenAPI 3.1, hand-written, ADR-0007).
 
 If the two disagree, `requirements.md` wins. If the code disagrees with the docs, stop and ask.
 Don't quietly pick one.
 
 - **Behaviour changes** (new rule, status code, field, decision) go into `requirements.md` first, then the code.
 - **Design changes** go into `architecture.md` in the same change as the code.
+- **API changes** (paths, parameters, fields, status codes, error bodies) go into `openapi.yaml` first. Then
+  update the hand-written controller and DTOs to match. Don't generate code from the spec, and don't add
+  OpenAPI annotations to the controller. Spec descriptions are for API consumers: no ADR or
+  requirement IDs in them. Maintainer notes go in YAML comments.
 - **New architectural decisions** need a new ADR. Accepted ADRs are never edited: supersede them with a new one.
 - **Open questions (Q)** must not be resolved in code on your own. Ask.
 - **Refer by ID** (e.g. D13, AT-2), not by section number.
@@ -40,6 +45,7 @@ Don't quietly pick one.
 ./gradlew test                                        # all tests
 ./gradlew test --tests 'com.store.prices.SomeTest'    # single test class
 ./gradlew bootRun                                     # run on http://localhost:8080
+npx @redocly/cli lint docs/api/openapi.yaml           # lint the API contract after editing it
 ```
 
 - Swagger UI: `http://localhost:8080/swagger-ui.html`
