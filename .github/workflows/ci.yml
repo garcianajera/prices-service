@@ -28,7 +28,7 @@ jobs:
           java-version: 21
 
       # Caches dependencies and the Gradle distribution, and validates the wrapper jar.
-      - uses: gradle/actions/setup-gradle@v5
+      - uses: gradle/actions/setup-gradle@v6
 
       - name: Build
         run: ./gradlew build
