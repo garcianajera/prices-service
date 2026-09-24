@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | Draft |
 | **Last updated** | 2026-09-24 |
-| **Sources** | Original technical-test statement (transcribed in Appendix A) · Seed data [`source/prices_.csv`](source/prices_.csv) · Additional reviewer instruction (section 4.2) |
+| **Sources** | Original technical-test statement (transcribed in Appendix A) · Seed data [`source/prices.csv`](source/prices.csv) · Additional reviewer instruction (section 4.2) |
 | **Related documents** | [`architecture.md`](architecture.md): how the service is built |
 
 This document defines **what** the service must do and the constraints it must respect. Design and
@@ -56,7 +56,7 @@ types below are logical. The physical SQL and Java types are defined in `archite
 ### 3.2 Seed data
 
 The database must be initialised with exactly these rows. The source is
-[`source/prices_.csv`](source/prices_.csv), and the rows match the example in the original statement.
+[`source/prices.csv`](source/prices.csv), and the rows match the example in the original statement.
 The `#` column is only a reference used in section 5.
 
 | # | BRAND_ID | START_DATE          | END_DATE            | PRICE_LIST | PRODUCT_ID | PRIORITY | PRICE | CURR | LAST_UPDATE         | LAST_UPDATE_BY |
