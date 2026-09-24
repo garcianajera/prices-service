@@ -116,8 +116,10 @@ and DTO are written by hand to match it.
 - `PriceController`: `@GetMapping("/api/v1/prices")`, with parameters:
   - `@RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") LocalDateTime applicationDate`.
     The strict pattern rejects fractional seconds (D13). `iso = DATE_TIME` would accept them.
-  - `@RequestParam @Positive Long productId`
-  - `@RequestParam @Positive Long brandId`
+  - `@RequestParam @Positive long productId`
+  - `@RequestParam @Positive long brandId`
+  - The ids are primitives like everywhere else. Spring rejects a required parameter that's missing or not a
+    number before the method is called, so a wrapper would never hold null here.
 - `PriceResponse` (record): `productId, brandId, priceList, startDate, endDate, price, currency`.
 - `RestExceptionHandler` (`@RestControllerAdvice`) returns `ProblemDetail`:
 

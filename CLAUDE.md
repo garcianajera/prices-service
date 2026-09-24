@@ -77,6 +77,8 @@ Base package: `com.store.prices`.
 - Use `record`s for immutable data (domain model, queries, DTOs), and validate invariants in compact constructors.
 - Production code uses constructor injection only, never field injection (ArchUnit enforces this). Tests
   may use `@Autowired` fields, the usual Spring test convention.
+- Required values are primitives (`long`, `int`), so they can't be null. Use a wrapper only where null
+  has a meaning, such as the generated entity `ID` before it's persisted.
 - Money is `BigDecimal`, never `double`/`float`. Dates are `LocalDateTime` without a time zone, at second precision.
 - Return `Optional` rather than `null`. A missing price becomes a domain exception, which the REST
   layer turns into a 404.
