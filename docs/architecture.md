@@ -2,9 +2,12 @@
 
 > How the service is built. What it must do is defined in [`requirements.md`](requirements.md). IDs
 > such as FR-4, AR-1, D3, C5, T2, AT-1 and B1 refer to that document. If this document and the requirements
-> disagree, the requirements win.
+> disagree, the requirements win. The reasoning behind each design choice is in the
+> [Architecture Decision Records](adr/README.md).
 
 ## 1. Layers and dependency rule (C1–C3)
+
+See [ADR-0002](adr/0002-hexagonal-architecture.md).
 
 ```
 infrastructure  ──►  application  ──►  domain
@@ -65,6 +68,8 @@ HTTP GET /api/v1/prices
 
 ### 4.2 `PriceSelector` — selection algorithm (FR-4, D3, D4, C5)
 
+See [ADR-0003](adr/0003-price-selection-in-domain-with-streams.md).
+
 ```java
 public Optional<Price> select(List<Price> candidates, LocalDateTime applicationDate) {
     return candidates.stream()
@@ -95,6 +100,8 @@ It returns the candidate prices. It does not order them or pick one.
 ## 6. Infrastructure
 
 ### 6.1 REST adapter (inbound)
+
+Error handling: see [ADR-0005](adr/0005-errors-as-problem-details.md).
 - `PriceController`: `@GetMapping("/api/v1/prices")`, with parameters:
   - `@RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") LocalDateTime applicationDate`.
     The strict pattern rejects fractional seconds (D13). `iso = DATE_TIME` would accept them.
@@ -112,6 +119,8 @@ It returns the candidate prices. It does not order them or pick one.
 - OpenAPI annotations (`@Operation`, `@ApiResponse`) go on the controller only.
 
 ### 6.2 Persistence adapter (outbound)
+
+Schema initialisation: see [ADR-0004](adr/0004-schema-and-data-with-sql-scripts.md).
 - `PriceEntity`: a JPA entity mapped to `PRICES`. It includes the audit columns, which never reach the domain.
 - `PriceJpaRepository`: a derived query or a JPQL query filtering by brand, product and
   `startDate <= :date AND endDate >= :date`. It has **no** `ORDER BY priority` and **no** `LIMIT` (C5).
@@ -154,6 +163,8 @@ It returns the candidate prices. It does not order them or pick one.
 - Don't write `null` checks in the business flow. Use `Optional`, and throw domain exceptions.
 
 ## 8. Test strategy (T1–T4)
+
+Integration test approach: see [ADR-0006](adr/0006-integration-tests-with-mockmvc.md).
 
 | Req | Level                  | Target                                     | Tools                                   | What it covers                                                                                             |
 |-----|------------------------|--------------------------------------------|-----------------------------------------|------------------------------------------------------------------------------------------------------------|

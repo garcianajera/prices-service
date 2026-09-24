@@ -15,12 +15,14 @@ Read these before implementing or changing behaviour:
    testing requirements (T), non-functional requirements (N) and open questions (Q).
 2. [`docs/architecture.md`](docs/architecture.md): **how** it's built. It covers packages, class names,
    the selection algorithm, the physical data model and the test strategy.
+3. [`docs/adr/`](docs/adr/README.md): **why** it's built this way. These are the Architecture Decision Records.
 
 If the two disagree, `requirements.md` wins. If the code disagrees with the docs, stop and ask.
 Don't quietly pick one.
 
 - **Behaviour changes** (new rule, status code, field, decision) go into `requirements.md` first, then the code.
 - **Design changes** go into `architecture.md` in the same change as the code.
+- **New architectural decisions** need a new ADR. Accepted ADRs are never edited: supersede them with a new one.
 - **Open questions (Q)** must not be resolved in code on your own. Ask.
 - **Refer by ID** (e.g. D13, AT-2), not by section number.
 
