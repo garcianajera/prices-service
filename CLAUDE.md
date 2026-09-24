@@ -3,8 +3,9 @@
 Spring Boot REST service that returns the applicable price for a brand, product and application
 date. It is a technical test, assessed on design, code quality and correct test results.
 
-**Status:** the build setup, the pending acceptance tests (`PriceAcceptanceTest`, disabled), `ArchitectureTest`,
-the domain, use case and persistence slices are done. Next is the REST slice (see Workflow).
+**Status:** the price endpoint is implemented: all slices are done and every acceptance test in
+`PriceAcceptanceTest` passes. Next is serving the hand-written contract in Swagger UI (`architecture.md`
+Configuration section) and the README (N3).
 
 ## Source of truth
 
@@ -97,8 +98,17 @@ Base package: `com.store.prices`.
   - `org.springframework.boot.data.jpa.test.autoconfigure` for `@DataJpaTest`.
 - The starters are modular too (`spring-boot-starter-webmvc`, plus `*-test` starters per module).
 
-**Date parsing (D13).** Bind `applicationDate` with `@DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")`.
-`iso = DATE_TIME` accepts fractional seconds, which would break B12.
+**Date parsing (D13).** Bind `applicationDate` with
+`@DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss", fallbackPatterns = "yyyy-MM-dd'T'HH:mm:ss")`. With `pattern`
+alone, Spring retries a failed parse with ISO, which accepts fractional seconds and breaks B12. So does
+`iso = DATE_TIME`.
+
+**Jackson 3 annotations** (`@JsonFormat`, `@JsonInclude`…) are still under `com.fasterxml.jackson.annotation`.
+Only databind and core moved to `tools.jackson.*`. The default `LocalDateTime` serialization drops zero seconds,
+so the response DTO needs `@JsonFormat`.
+
+**`ProblemDetail.type`** is null by default in Spring 7 and left out of the JSON. `RestExceptionHandler` sets
+`about:blank`, because the contract requires it.
 
 ## Testing
 
@@ -129,7 +139,8 @@ Base package: `com.store.prices`.
 - Every commit must keep `./gradlew build` green. Never commit failing tests. Pending acceptance tests
   are disabled, not failing.
 - Don't use `@Disabled` for anything other than the pending acceptance tests, and always give a reason.
-- The ArchUnit test is enabled from the start, with `allowEmptyShould(true)` while the packages are empty.
+- The ArchUnit test is enabled from the start, with `allowEmptyShould(true)` while the packages are empty. Remove
+  it once every layer has classes.
 
 ## Code review
 

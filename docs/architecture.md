@@ -119,20 +119,33 @@ Error handling: see [ADR-0005](adr/0005-errors-as-problem-details.md). The contr
 [`api/openapi.yaml`](api/openapi.yaml): see [ADR-0007](adr/0007-contract-first-openapi.md). The controller
 and DTO are written by hand to match it.
 - `PriceController`: `@GetMapping("/api/v1/prices")`, with parameters:
-  - `@RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") LocalDateTime applicationDate`.
-    The strict pattern rejects fractional seconds (D13). `iso = DATE_TIME` would accept them.
-  - `@RequestParam @Positive long productId`
-  - `@RequestParam @Positive long brandId`
+  - `@RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss", fallbackPatterns = "yyyy-MM-dd'T'HH:mm:ss")
+    LocalDateTime applicationDate`. It accepts whole seconds only (D13). When the pattern fails and no fallback
+    patterns are set, Spring retries with ISO parsing, which accepts fractional seconds, and so does
+    `iso = DATE_TIME`. Setting the same pattern as the only fallback turns that retry off.
+  - `@RequestParam @Min(value = 1, message = "must be greater than or equal to 1") long productId`, and the same
+    for `brandId`. `@Min(1)` mirrors `minimum: 1` in the contract. The explicit message keeps the problem detail
+    in English whatever the locale, because the built-in messages are translated.
   - The ids are primitives like everywhere else. Spring rejects a required parameter that's missing or not a
     number before the method is called, so a wrapper would never hold null here.
-- `PriceResponse` (record): `productId, brandId, priceList, startDate, endDate, price, currency`.
-- `RestExceptionHandler` (`@RestControllerAdvice`) returns `ProblemDetail`:
+- `PriceResponse` (record): `productId, brandId, priceList, startDate, endDate, price, currency`. The dates carry
+  `@JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")`, because Jackson's default drops zero seconds
+  (`2020-06-14T00:00`).
+- `PriceRestMapper` (`@Component`): domain `Price` → `PriceResponse`.
+- `RestExceptionHandler` (`@RestControllerAdvice`) extends `ResponseEntityExceptionHandler` and returns
+  `ProblemDetail`. The base class keeps Spring MVC's own errors at their proper status, so an unknown path is
+  404 and a `POST` is 405, not 500. Every response goes through one `createResponseEntity` override that sets
+  `type` to `about:blank`: Spring 7 leaves `type` out when it isn't set, and the contract requires it.
 
-| Exception                                                                                   | Status |
-|---------------------------------------------------------------------------------------------|--------|
-| `PriceNotFoundException`                                                                    | 404    |
-| `MissingServletRequestParameterException`, `MethodArgumentTypeMismatchException`, `HandlerMethodValidationException` / `ConstraintViolationException` | 400 |
-| Any other `Exception` (logged; generic message)                                             | 500    |
+| Exception                                                    | Status | `detail`                                                        |
+|--------------------------------------------------------------|--------|-----------------------------------------------------------------|
+| `PriceNotFoundException`                                     | 404    | The exception message, e.g. `No applicable price for brand 1, product 99999 at 2020-06-14T10:00:00.` |
+| `MissingServletRequestParameterException`                    | 400    | Spring's own: `Required parameter 'brandId' is not present.`    |
+| `MethodArgumentTypeMismatchException` on `applicationDate`   | 400    | `Parameter 'applicationDate' must match yyyy-MM-ddTHH:mm:ss.`   |
+| `MethodArgumentTypeMismatchException` on an id               | 400    | `Parameter 'productId' must be an integer.`                     |
+| `HandlerMethodValidationException`                           | 400    | `Parameter 'productId' must be greater than or equal to 1.`     |
+| Other Spring MVC exceptions (unknown path, method not allowed…) | 4xx | Spring's own                                                    |
+| Any other `Exception` (logged)                               | 500    | `An unexpected error occurred.`                                 |
 
 - The controller has no OpenAPI annotations. The contract lives only in `openapi.yaml`.
 
@@ -208,7 +221,7 @@ Integration test approach: see [ADR-0006](adr/0006-integration-tests-with-mockmv
 | T3  | Application unit       | `FindApplicablePriceService`               | JUnit 5, Mockito, AssertJ               | Port called with the query values; selected price returned; `PriceNotFoundException` when nothing applies. No Spring context. |
 | —   | Persistence slice      | `PricePersistenceAdapter` + JPA query      | `@DataJpaTest`                          | Pre-filter against the seed data, boundary dates included; entity→domain mapping.                          |
 | —   | Seed data              | `schema.sql` + `data.sql`                  | `@DataJpaTest`, `JdbcTemplate`          | `PRICES` holds exactly the rows of `docs/source/prices.csv`, field by field (`SeedDataTest`).               |
-| —   | REST slice             | `PriceController` + `RestExceptionHandler` | `@WebMvcTest`, mocked use case          | Parameter binding, JSON shape, 400 for missing or malformed params and fractional seconds, 404 mapping.   |
+| —   | REST slice             | `PriceController` + `RestExceptionHandler` | `@WebMvcTest`, mocked use case          | Parameter binding, JSON shape (strict, incl. seconds and scale), full problem bodies for 400 (every B12/B13 variant), 404 and 500 (no internal details), and Spring's own 404 (unknown path) and 405 as problem+json. |
 | T1  | Integration            | Full application (`PriceAcceptanceTest`)   | `@SpringBootTest` + MockMvc, H2         | AT-1–AT-5 and B1–B7: the whole 200 body is compared strictly (`JsonCompareMode.STRICT`), so all fields are checked and extra fields fail. B8–B13: status plus the problem+json content type, `status` and `title`. Parameterized with `@CsvSource` tables that mirror the requirements. |
 | T4  | Architecture           | Package dependencies (`ArchitectureTest`)  | ArchUnit                                | Layer rule C2; no Spring, JPA, Jakarta, Hibernate or Jackson dependencies in `domain` or `application` (C3); no field injection. |
 

@@ -11,7 +11,6 @@ import com.tngtech.archunit.library.GeneralCodingRules;
 
 /**
  * Enforces the hexagonal architecture rules (T4: C2, C3; ADR-0002). Never weaken a rule to make the build pass.
- * {@code allowEmptyShould(true)} keeps the rules green while the layer packages are still empty.
  */
 @AnalyzeClasses(packages = "com.store.prices", importOptions = ImportOption.DoNotIncludeTests.class)
 class ArchitectureTest {
@@ -23,15 +22,13 @@ class ArchitectureTest {
     @ArchTest
     static final ArchRule dependenciesPointInwards = layeredArchitecture()
             .consideringOnlyDependenciesInLayers()
-            .withOptionalLayers(true)
             .layer("Domain").definedBy(DOMAIN)
             .layer("Application").definedBy(APPLICATION)
             .layer("Infrastructure").definedBy(INFRASTRUCTURE)
             .whereLayer("Infrastructure").mayNotBeAccessedByAnyLayer()
             .whereLayer("Application").mayOnlyBeAccessedByLayers("Infrastructure")
             .whereLayer("Domain").mayOnlyBeAccessedByLayers("Application", "Infrastructure")
-            .because("dependencies must point inwards: infrastructure → application → domain (C2)")
-            .allowEmptyShould(true);
+            .because("dependencies must point inwards: infrastructure → application → domain (C2)");
 
     @ArchTest
     static final ArchRule coreIsFrameworkFree = noClasses()
@@ -43,11 +40,9 @@ class ArchitectureTest {
                     "org.hibernate..",
                     "tools.jackson..",
                     "com.fasterxml.jackson..")
-            .because("domain and application must not depend on any framework, persistence or HTTP code (C3)")
-            .allowEmptyShould(true);
+            .because("domain and application must not depend on any framework, persistence or HTTP code (C3)");
 
     @ArchTest
     static final ArchRule noFieldInjection = GeneralCodingRules.NO_CLASSES_SHOULD_USE_FIELD_INJECTION
-            .because("only constructor injection is allowed")
-            .allowEmptyShould(true);
+            .because("only constructor injection is allowed");
 }
