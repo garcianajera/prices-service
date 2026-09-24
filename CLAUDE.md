@@ -4,7 +4,8 @@ Spring Boot REST service that returns the applicable price for a brand, product 
 date. It is a technical test, assessed on design, code quality and correct test results.
 
 **Status:** the price endpoint is implemented: all slices are done and every acceptance test in
-`PriceAcceptanceTest` passes, and Swagger UI serves the hand-written contract. Next is the README (N3).
+`PriceAcceptanceTest` passes, Swagger UI serves the hand-written contract, and the README covers N3. The
+service is complete.
 
 ## Source of truth
 
