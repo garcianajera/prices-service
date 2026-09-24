@@ -129,6 +129,9 @@ Schema initialisation: see [ADR-0004](adr/0004-schema-and-data-with-sql-scripts.
 - `PricePersistenceAdapter` implements `PriceRepositoryPort` and maps entities to the domain with `PriceEntityMapper`.
 - Schema and data are loaded from `src/main/resources/schema.sql` and `data.sql`, with
   `spring.jpa.hibernate.ddl-auto=none`.
+- No fixed `spring.datasource.url`. Spring Boot creates a uniquely named in-memory H2 database for
+  each application context, so extra test contexts never re-run `schema.sql` against a database
+  that already exists.
 - `data.sql` has the rows of [`source/prices.csv`](source/prices.csv), with the source dates
   (`2020-06-14-00.00.00`) converted to `TIMESTAMP '2020-06-14 00:00:00'` literals (D1).
 - Index: `CREATE INDEX IDX_PRICES_LOOKUP ON PRICES (BRAND_ID, PRODUCT_ID, START_DATE, END_DATE)`.
@@ -181,6 +184,7 @@ Integration test approach: see [ADR-0006](adr/0006-integration-tests-with-mockmv
 | T2  | Domain unit (streams)  | `PriceSelector`                            | JUnit 5 (`@ParameterizedTest`), AssertJ | Empty list; single match; highest priority wins; tie-break (D4); non-applicable ignored; AT-1–AT-5 with in-memory fixtures. |
 | T3  | Application unit       | `FindApplicablePriceService`               | JUnit 5, Mockito, AssertJ               | Port called with the query values; selected price returned; `PriceNotFoundException` when nothing applies. No Spring context. |
 | —   | Persistence slice      | `PricePersistenceAdapter` + JPA query      | `@DataJpaTest`                          | Pre-filter against the seed data, boundary dates included; entity→domain mapping.                          |
+| —   | Seed data              | `schema.sql` + `data.sql`                  | `@DataJpaTest`, `JdbcTemplate`          | `PRICES` holds exactly the rows of `docs/source/prices.csv`, field by field (`SeedDataTest`).               |
 | —   | REST slice             | `PriceController` + `RestExceptionHandler` | `@WebMvcTest`, mocked use case          | Parameter binding, JSON shape, 400 for missing or malformed params and fractional seconds, 404 mapping.   |
 | T1  | Integration            | Full application                           | `@SpringBootTest` + MockMvc, H2         | AT-1–AT-5 and B1–B13, parameterized, every response field asserted.                                        |
 | T4  | Architecture           | Package dependencies                       | ArchUnit                                | Layer rule C2; no Spring, JPA or Jakarta imports in `domain` or `application` (C3).                        |

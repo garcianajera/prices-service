@@ -3,8 +3,8 @@
 Spring Boot REST service that returns the applicable price for a brand, product and application
 date. It is a technical test, assessed on design, code quality and correct test results.
 
-**Status:** docs only. The code is still the Spring Initializr scaffold, and the service has not been
-implemented yet.
+**Status:** the build setup is done: H2 schema, seed data and build configuration. The business code
+hasn't been written yet. Next is the pending acceptance tests (see Workflow).
 
 ## Source of truth
 
@@ -50,12 +50,13 @@ npx @redocly/cli lint docs/api/openapi.yaml           # lint the API contract af
 
 - Swagger UI: `http://localhost:8080/swagger-ui.html`
 - Example: `curl 'http://localhost:8080/api/v1/prices?applicationDate=2020-06-14T10:00:00&productId=35455&brandId=1'`
-- H2 console: `http://localhost:8080/h2-console`, once enabled with `spring.h2.console.enabled=true` (not set yet).
+- H2 console (with `bootRun` only): `http://localhost:8080/h2-console`. The JDBC URL is generated for each run and
+  printed in the startup log (`Database available at 'jdbc:h2:mem:…'`), and the user is `sa` with an empty password.
 
 ## Stack
 
 Java 21, Spring Boot 4.1, Gradle (Groovy DSL), Spring Web MVC, Spring Data JPA, Bean Validation,
-H2, springdoc-openapi. Tests use JUnit 5, AssertJ, Mockito and ArchUnit (not yet in `build.gradle`).
+H2, springdoc-openapi. Tests use JUnit 5, AssertJ, Mockito and ArchUnit.
 Base package: `com.store.prices`.
 
 ## Architecture rules (hexagonal — non-negotiable)
